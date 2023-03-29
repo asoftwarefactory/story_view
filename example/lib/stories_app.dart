@@ -1,38 +1,62 @@
+import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:story_view/story_view.dart';
 
-void main() => runApp(MyApp());
+Future<void> main() async {
+  return runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-        ),
-        home: Home());
+      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+      ),
+      home: Home(),
+    );
   }
 }
 
 class Home extends StatelessWidget {
   final StoryController controller = StoryController();
 
+  Future<int> calculateVideoLengthInSeconds(String pathFileOrUrl) async {
+    final mediaInfo = (await FFprobeKit.getMediaInformation(pathFileOrUrl))
+        .getMediaInformation();
+    final dur = mediaInfo?.getDuration();
+    if (dur != null) {
+      final returnValue = double.tryParse(dur);
+      if (returnValue != null) {
+        return returnValue.round();
+      } else {
+        throw Exception(" mediaInfo?.getDuration() return value not valid");
+      }
+    } else {
+      throw Exception("getDuration return null value , check pathFileOrUrl");
+    }
+  }
+
+  Home({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Delicious Ghanaian Meals"),
+        title: const Text("Delicious Ghanaian Meals"),
       ),
       body: Container(
-        margin: EdgeInsets.all(
+        margin: const EdgeInsets.all(
           8,
         ),
         child: ListView(
           children: <Widget>[
-            Container(
+            SizedBox(
               height: 300,
               child: StoryView(
                 controller: controller,
@@ -42,7 +66,9 @@ class Home extends StatelessWidget {
                         "Hello world!\nHave a look at some great Ghanaian delicacies. I'm sorry if your mouth waters. \n\nTap!",
                     backgroundColor: Colors.orange,
                     roundedTop: true,
+                    duration: const Duration(seconds: 9),
                   ),
+
                   // StoryItem.inlineImage(
                   //   NetworkImage(
                   //       "https://image.ibb.co/gCZFbx/Banku-and-tilapia.jpg"),
@@ -55,11 +81,36 @@ class Home extends StatelessWidget {
                   //     ),
                   //   ),
                   // ),
+                  StoryItem.pageImage(
+                    url:
+                        "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+                    controller: controller,
+                    /*  caption: const Text(
+                      "Omotuo & Nkatekwan; You will love this meal if taken as supper.",
+                      style: TextStyle(
+                        color: Colors.white,
+                        backgroundColor: Colors.black54,
+                        fontSize: 17,
+                      ),
+                    ), */
+                  ),
+                  StoryItem.pageVideo(
+                    "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+                    controller: controller,
+                    /*  caption: const Text(
+                      "Omotuo & Nkatekwan; You will love this meal if taken as supper.",
+                      style: TextStyle(
+                        color: Colors.white,
+                        backgroundColor: Colors.black54,
+                        fontSize: 17,
+                      ),
+                    ), */
+                  ),
                   StoryItem.inlineImage(
                     url:
                         "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
                     controller: controller,
-                    caption: Text(
+                    caption: const Text(
                       "Omotuo & Nkatekwan; You will love this meal if taken as supper.",
                       style: TextStyle(
                         color: Colors.white,
@@ -72,7 +123,7 @@ class Home extends StatelessWidget {
                     url:
                         "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
                     controller: controller,
-                    caption: Text(
+                    caption: const Text(
                       "Hektas, sektas and skatad",
                       style: TextStyle(
                         color: Colors.white,
@@ -80,13 +131,13 @@ class Home extends StatelessWidget {
                         fontSize: 17,
                       ),
                     ),
-                  )
+                  ),
                 ],
                 onStoryShow: (s) {
-                  print("Showing a story");
+                  debugPrint("Showing a story");
                 },
                 onComplete: () {
-                  print("Completed a cycle");
+                  debugPrint("Completed a cycle");
                 },
                 progressPosition: ProgressPosition.bottom,
                 repeat: false,
@@ -96,18 +147,18 @@ class Home extends StatelessWidget {
             Material(
               child: InkWell(
                 onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => MoreStories()));
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const MoreStories()));
                 },
                 child: Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                       color: Colors.black54,
                       borderRadius:
                           BorderRadius.vertical(bottom: Radius.circular(8))),
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
+                    children: const <Widget>[
                       Icon(
                         Icons.arrow_forward,
                         color: Colors.white,
@@ -124,6 +175,15 @@ class Home extends StatelessWidget {
                 ),
               ),
             ),
+            ElevatedButton(
+              onPressed: () async {
+                // default path video
+                final duration = await calculateVideoLengthInSeconds(
+                    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
+                debugPrint("Duration Seconds => $duration");
+              },
+              child: const Text("calcola la durata del video in secondi"),
+            ),
           ],
         ),
       ),
@@ -132,11 +192,13 @@ class Home extends StatelessWidget {
 }
 
 class MoreStories extends StatefulWidget {
+  const MoreStories({super.key});
+
   @override
-  _MoreStoriesState createState() => _MoreStoriesState();
+  MoreStoriesState createState() => MoreStoriesState();
 }
 
-class _MoreStoriesState extends State<MoreStories> {
+class MoreStoriesState extends State<MoreStories> {
   final storyController = StoryController();
 
   @override
@@ -149,18 +211,19 @@ class _MoreStoriesState extends State<MoreStories> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("More"),
+        title: const Text("More"),
       ),
       body: StoryView(
         storyItems: [
           StoryItem.text(
             title: "I guess you'd love to see more of our food. That's great.",
             backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 9),
           ),
           StoryItem.text(
             title: "Nice!\n\nTap to continue.",
             backgroundColor: Colors.red,
-            textStyle: TextStyle(
+            textStyle: const TextStyle(
               fontFamily: 'Dancing',
               fontSize: 40,
             ),
@@ -187,10 +250,10 @@ class _MoreStoriesState extends State<MoreStories> {
           ),
         ],
         onStoryShow: (s) {
-          print("Showing a story");
+          debugPrint("Showing a story");
         },
         onComplete: () {
-          print("Completed a cycle");
+          debugPrint("Completed a cycle");
         },
         progressPosition: ProgressPosition.top,
         repeat: false,
