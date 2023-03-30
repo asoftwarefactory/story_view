@@ -153,7 +153,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     }
   }
 
-  void _play() {
+  Future<void> _play() async {
     _animationController?.dispose();
     // get the next playing page
     final storyItem = widget.storyItems.firstWhere((it) {
@@ -164,8 +164,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       widget.onStoryShow!(storyItem);
     }
 
-    _animationController =
-        AnimationController(duration: storyItem.duration, vsync: this);
+    _animationController = AnimationController(
+        duration: await storyItem.calculateStoryDuration(), vsync: this);
 
     _animationController!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -283,7 +283,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                   ),
                   child: PageBar(
                     widget.storyItems
-                        .map((it) => PageData(it!.duration, it.shown))
+                        .map((it) async => PageData(
+                            await it!.calculateStoryDuration(), it.shown))
                         .toList(),
                     _currentAnimation,
                     key: UniqueKey(),
@@ -365,8 +366,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 /// Capsule holding the duration and shown property of each story. Passed down
 /// to the pages bar to render the page indicators.
 class PageData {
-  Duration duration;
-  bool shown;
+  final Duration duration;
+  final bool shown;
 
   PageData(this.duration, this.shown);
 }
@@ -374,7 +375,7 @@ class PageData {
 /// Horizontal bar displaying a row of [StoryProgressIndicator] based on the
 /// [pages] provided.
 class PageBar extends StatefulWidget {
-  final List<PageData> pages;
+  final List<Future<PageData>> pages;
   final Animation<double>? animation;
   final IndicatorHeight indicatorHeight;
   final Color indicatorColor;
@@ -415,8 +416,20 @@ class PageBarState extends State<PageBar> {
     }
   }
 
-  bool isPlaying(PageData page) {
-    return widget.pages.firstWhereOrNull((it) => !it.shown) == page;
+  bool isPlaying(List<PageData> pages, PageData page) {
+    return pages.firstWhereOrNull((it) => !it.shown) == page;
+  }
+
+  Future<double> _calculateStoryValueProgressIndicator(
+      Future<PageData> asyncPageData) async {
+    final ap = <PageData>[];
+    final pageData = await asyncPageData;
+    for (var it in widget.pages) {
+      ap.add(await it);
+    }
+    return isPlaying(ap, pageData)
+        ? widget.animation!.value
+        : (pageData.shown ? 1 : 0);
   }
 
   @override
@@ -427,11 +440,20 @@ class PageBarState extends State<PageBar> {
           child: Container(
             padding:
                 EdgeInsets.only(right: widget.pages.last == it ? 0 : spacing),
-            child: StoryProgressIndicator(
-              isPlaying(it) ? widget.animation!.value : (it.shown ? 1 : 0),
-              indicatorHeight:
-                  widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
-              indicatorColor: widget.indicatorColor,
+            child: FutureBuilder<double>(
+              future: _calculateStoryValueProgressIndicator(it),
+              builder: (ctx, snapshot) {
+                if (snapshot.hasData && snapshot.data != null) {
+                  return StoryProgressIndicator(
+                    snapshot.data!,
+                    indicatorHeight:
+                        widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
+                    indicatorColor: widget.indicatorColor,
+                  );
+                } else {
+                  return const SizedBox();
+                }
+              },
             ),
           ),
         );

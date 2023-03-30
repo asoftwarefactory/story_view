@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controller/story_controller.dart';
+import '../utils.dart';
 import 'story_image.dart';
 import 'story_video.dart';
 import 'story_view.dart';
@@ -18,6 +19,8 @@ class StoryItem {
   /// is because the next item to be displayed is taken by the last unshown
   /// story item.
   bool shown;
+  bool? _calculateVideoDuration;
+  String? _resourceUrl;
 
   /// The page content
   final Widget view;
@@ -25,7 +28,12 @@ class StoryItem {
     this.view, {
     required this.duration,
     this.shown = false,
-  });
+    bool? calculateVideoDuration,
+    String? resourceUrl,
+  }) {
+    _calculateVideoDuration = calculateVideoDuration;
+    _resourceUrl = resourceUrl;
+  }
 
   /// Short hand to create text-only page.
   ///
@@ -253,6 +261,56 @@ class StoryItem {
         duration: duration ?? const Duration(seconds: 10));
   }
 
+  factory StoryItem.pageVideoCalculateDuration(
+    String url, {
+    required StoryController controller,
+    Key? key,
+    BoxFit imageFit = BoxFit.fitWidth,
+    String? caption,
+    bool shown = false,
+    Map<String, dynamic>? requestHeaders,
+  }) {
+    return StoryItem(
+      Container(
+        key: key,
+        color: Colors.black,
+        child: Stack(
+          children: <Widget>[
+            StoryVideo.url(
+              url,
+              controller: controller,
+              requestHeaders: requestHeaders,
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  color: caption != null ? Colors.black54 : Colors.transparent,
+                  child: caption != null
+                      ? Text(
+                          caption,
+                          style: const TextStyle(
+                              fontSize: 15, color: Colors.white),
+                          textAlign: TextAlign.center,
+                        )
+                      : const SizedBox(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      shown: shown,
+      duration: const Duration(seconds: 10),
+      calculateVideoDuration: true,
+      resourceUrl: url,
+    );
+  }
+
   /// Shorthand for creating a story item from an image provider such as `AssetImage`
   /// or `NetworkImage`. However, the story continues to play while the image loads
   /// up.
@@ -357,5 +415,22 @@ class StoryItem {
       shown: shown,
       duration: duration ?? const Duration(seconds: 3),
     );
+  }
+
+  Future<Duration> calculateStoryDuration() async {
+    try {
+      if (_calculateVideoDuration == true && _resourceUrl != null) {
+        final seconds = await calculateVideoLengthInSeconds(_resourceUrl ?? "");
+        if (seconds > 0) {
+          return Duration(seconds: seconds);
+        } else {
+          return duration;
+        }
+      } else {
+        return duration;
+      }
+    } catch (e) {
+      return duration;
+    }
   }
 }
