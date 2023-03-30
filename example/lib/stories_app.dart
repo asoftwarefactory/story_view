@@ -1,4 +1,3 @@
-import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:story_view/story_view.dart';
 
@@ -25,22 +24,6 @@ class MyApp extends StatelessWidget {
 
 class Home extends StatelessWidget {
   final StoryController controller = StoryController();
-
-  Future<int> calculateVideoLengthInSeconds(String pathFileOrUrl) async {
-    final mediaInfo = (await FFprobeKit.getMediaInformation(pathFileOrUrl))
-        .getMediaInformation();
-    final dur = mediaInfo?.getDuration();
-    if (dur != null) {
-      final returnValue = double.tryParse(dur);
-      if (returnValue != null) {
-        return returnValue.round();
-      } else {
-        throw Exception(" mediaInfo?.getDuration() return value not valid");
-      }
-    } else {
-      throw Exception("getDuration return null value , check pathFileOrUrl");
-    }
-  }
 
   Home({super.key});
 
@@ -94,6 +77,18 @@ class Home extends StatelessWidget {
                       ),
                     ), */
                   ),
+                /*   StoryItem.pageVideoCalculateDuration(
+                    "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+                    controller: controller,
+                    /*  caption: const Text(
+                      "Omotuo & Nkatekwan; You will love this meal if taken as supper.",
+                      style: TextStyle(
+                        color: Colors.white,
+                        backgroundColor: Colors.black54,
+                        fontSize: 17,
+                      ),
+                    ), */
+                  ), */
                   StoryItem.pageVideo(
                     "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
                     controller: controller,
