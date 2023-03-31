@@ -77,7 +77,7 @@ class Home extends StatelessWidget {
                       ),
                     ), */
                   ),
-                /*   StoryItem.pageVideoCalculateDuration(
+                  StoryItem.pageVideoCalculateDuration(
                     "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
                     controller: controller,
                     /*  caption: const Text(
@@ -88,7 +88,7 @@ class Home extends StatelessWidget {
                         fontSize: 17,
                       ),
                     ), */
-                  ), */
+                  ),
                   StoryItem.pageVideo(
                     "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
                     controller: controller,

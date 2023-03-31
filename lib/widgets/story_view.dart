@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
+
 import 'package:story_view/widgets/story_item.dart';
+
 import '../controller/story_controller.dart';
 import '../utils.dart';
 
@@ -20,7 +23,7 @@ enum IndicatorHeight { small, large }
 /// gestures to pause, forward and go to previous page.
 class StoryView extends StatefulWidget {
   /// The pages to displayed.
-  final List<StoryItem?> storyItems;
+  final List<StoryItem> storyItems;
 
   /// Callback for when a full cycle of story is shown. This will be called
   /// each time the full story completes when [repeat] is set to `true`.
@@ -52,18 +55,24 @@ class StoryView extends StatefulWidget {
   // Indicator Color
   final Color indicatorColor;
 
+  final bool activeSwipeDetect;
+
+  final int startingIndex;
+
   const StoryView({
-    super.key,
+    Key? key,
     required this.storyItems,
-    required this.controller,
     this.onComplete,
+    this.onVerticalSwipeComplete,
     this.onStoryShow,
     this.progressPosition = ProgressPosition.top,
     this.repeat = false,
     this.inline = false,
-    this.onVerticalSwipeComplete,
+    required this.controller,
     this.indicatorColor = Colors.white,
-  });
+    this.activeSwipeDetect = false,
+    this.startingIndex = 0,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -72,6 +81,12 @@ class StoryView extends StatefulWidget {
 }
 
 class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
+  Future<void> _loadStoriesDuration() async {
+    for (var element in widget.storyItems) {
+      element.duration = await element.calculateStoryDuration();
+    }
+  }
+
   AnimationController? _animationController;
   Animation<double>? _currentAnimation;
   Timer? _nextDebouncer;
@@ -81,13 +96,13 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
   VerticalDragInfo? verticalDragInfo;
 
   StoryItem? get _currentStory {
-    return widget.storyItems.firstWhereOrNull((it) => !it!.shown);
+    return widget.storyItems.firstWhereOrNull((it) => !it.shown);
   }
 
   Widget get _currentView {
-    var item = widget.storyItems.firstWhereOrNull((it) => !it!.shown);
+    var item = widget.storyItems.firstWhereOrNull((it) => !it.shown);
     item ??= widget.storyItems.last;
-    return item?.view ?? Container();
+    return item.view;
   }
 
   @override
@@ -96,44 +111,48 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
     // All pages after the first unshown page should have their shown value as
     // false
-    final firstPage = widget.storyItems.firstWhereOrNull((it) => !it!.shown);
-    if (firstPage == null) {
-      for (var it2 in widget.storyItems) {
-        it2!.shown = false;
+
+    _loadStoriesDuration().then((e) {
+      final firstPage = widget.storyItems.firstWhereOrNull((it) => !it.shown);
+      if (firstPage == null) {
+        for (var it2 in widget.storyItems) {
+          it2.shown = false;
+        }
+      } else {
+        final lastShownPos = widget.storyItems.indexOf(firstPage);
+        widget.storyItems.sublist(lastShownPos).forEach((it) {
+          it.shown = false;
+        });
       }
-    } else {
-      final lastShownPos = widget.storyItems.indexOf(firstPage);
-      widget.storyItems.sublist(lastShownPos).forEach((it) {
-        it!.shown = false;
+
+      _playbackSubscription =
+          widget.controller.playbackNotifier.listen((playbackStatus) {
+        switch (playbackStatus) {
+          case PlaybackState.play:
+            _removeNextHold();
+            _animationController?.forward();
+            break;
+
+          case PlaybackState.pause:
+            _holdNext(); // then pause animation
+            _animationController?.stop(canceled: false);
+            break;
+
+          case PlaybackState.next:
+            _removeNextHold();
+            _goForward();
+            break;
+
+          case PlaybackState.previous:
+            _removeNextHold();
+            _goBack();
+            break;
+        }
       });
-    }
 
-    _playbackSubscription =
-        widget.controller.playbackNotifier.listen((playbackStatus) {
-      switch (playbackStatus) {
-        case PlaybackState.play:
-          _removeNextHold();
-          _animationController?.forward();
-          break;
-
-        case PlaybackState.pause:
-          _holdNext(); // then pause animation
-          _animationController?.stop(canceled: false);
-          break;
-
-        case PlaybackState.next:
-          _removeNextHold();
-          _goForward();
-          break;
-
-        case PlaybackState.previous:
-          _removeNextHold();
-          _goBack();
-          break;
-      }
+      _play();
+      setState(() {});
     });
-
-    _play();
   }
 
   @override
@@ -153,19 +172,19 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _play() async {
+  void _play() {
     _animationController?.dispose();
     // get the next playing page
     final storyItem = widget.storyItems.firstWhere((it) {
-      return !it!.shown;
-    })!;
+      return !it.shown;
+    });
 
     if (widget.onStoryShow != null) {
       widget.onStoryShow!(storyItem);
     }
 
-    _animationController = AnimationController(
-        duration: await storyItem.calculateStoryDuration(), vsync: this);
+    _animationController =
+        AnimationController(duration: storyItem.duration, vsync: this);
 
     _animationController!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -178,9 +197,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
         }
       }
     });
-
     _currentAnimation =
-        Tween(begin: 0.0, end: 1.0).animate(_animationController!);
+        (Tween(begin: 0.0, end: 1.0).animate(_animationController!));
 
     widget.controller.play();
   }
@@ -198,7 +216,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
     if (widget.repeat) {
       for (var it in widget.storyItems) {
-        it!.shown = false;
+        it.shown = false;
       }
 
       _beginPlay();
@@ -209,15 +227,15 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     _animationController!.stop();
 
     if (_currentStory == null) {
-      widget.storyItems.last!.shown = false;
+      widget.storyItems.last.shown = false;
     }
 
     if (_currentStory == widget.storyItems.first) {
       _beginPlay();
     } else {
-      _currentStory!.shown = false;
-      int lastPos = widget.storyItems.indexOf(_currentStory);
-      final previous = widget.storyItems[lastPos - 1]!;
+      _currentStory?.shown = false;
+      int lastPos = widget.storyItems.indexOf(_currentStory!);
+      final previous = widget.storyItems[lastPos - 1];
 
       previous.shown = false;
 
@@ -281,73 +299,90 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  child: PageBar(
-                    widget.storyItems
-                        .map((it) async => PageData(
-                            await it!.calculateStoryDuration(), it.shown))
-                        .toList(),
-                    _currentAnimation,
-                    key: UniqueKey(),
-                    indicatorHeight: widget.inline
-                        ? IndicatorHeight.small
-                        : IndicatorHeight.large,
-                    indicatorColor: widget.indicatorColor,
-                  ),
+                  child: _currentAnimation != null
+                      ? PageBar(
+                          widget.storyItems
+                              .map((it) => PageData(it.duration, it.shown))
+                              .toList(),
+                          _currentAnimation!,
+                          key: UniqueKey(),
+                          indicatorHeight: widget.inline
+                              ? IndicatorHeight.small
+                              : IndicatorHeight.large,
+                          indicatorColor: widget.indicatorColor,
+                        )
+                      : const SizedBox(),
                 ),
               ),
             ),
           ),
           Align(
-              alignment: Alignment.centerRight,
-              heightFactor: 1,
-              child: GestureDetector(
-                onTapDown: (details) {
-                  widget.controller.pause();
-                },
-                onTapCancel: () {
-                  widget.controller.play();
-                },
-                onTapUp: (details) {
-                  // if debounce timed out (not active) then continue anim
-                  if (_nextDebouncer?.isActive == false) {
-                    widget.controller.play();
-                  } else {
-                    widget.controller.next();
+            alignment: Alignment.centerRight,
+            heightFactor: 1,
+            child: GestureDetector(
+              onHorizontalDragEnd: (DragEndDetails details) {
+                if (widget.activeSwipeDetect) {
+                  if ((details.primaryVelocity ?? 0) < 0) {
+                    if (_nextDebouncer?.isActive == false) {
+                      widget.controller.play();
+                    } else {
+                      widget.controller.next();
+                    }
+                    // User swiped Left
+                  } else if ((details.primaryVelocity ?? 0) > 0) {
+                    widget.controller.previous();
+                    // User swiped Right
                   }
-                },
-                onVerticalDragStart: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.pause();
-                      },
-                onVerticalDragCancel: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : () {
-                        widget.controller.play();
-                      },
-                onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        verticalDragInfo ??= VerticalDragInfo();
+                }
+              },
+              onTapDown: (details) {
+                widget.controller.pause();
+              },
+              onTapCancel: () {
+                widget.controller.play();
+              },
+              onTapUp: (details) {
+                // if debounce timed out (not active) then continue anim
+                if (_nextDebouncer?.isActive == false) {
+                  widget.controller.play();
+                } else {
+                  widget.controller.next();
+                }
+              },
+              onVerticalDragStart: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      widget.controller.pause();
+                    },
+              onVerticalDragCancel: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : () {
+                      widget.controller.play();
+                    },
+              onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      verticalDragInfo ??= VerticalDragInfo();
 
-                        verticalDragInfo!.update(details.primaryDelta!);
+                      verticalDragInfo!.update(details.primaryDelta!);
 
-                        // TODO: provide callback interface for animation purposes
-                      },
-                onVerticalDragEnd: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.play();
-                        // finish up drag cycle
-                        if (!verticalDragInfo!.cancel &&
-                            widget.onVerticalSwipeComplete != null) {
-                          widget.onVerticalSwipeComplete!(
-                              verticalDragInfo!.direction);
-                        }
+                      // TODO: provide callback interface for animation purposes
+                    },
+              onVerticalDragEnd: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      widget.controller.play();
+                      // finish up drag cycle
+                      if (!verticalDragInfo!.cancel &&
+                          widget.onVerticalSwipeComplete != null) {
+                        widget.onVerticalSwipeComplete!(
+                            verticalDragInfo!.direction);
+                      }
 
-                        verticalDragInfo = null;
-                      },
-              )),
+                      verticalDragInfo = null;
+                    },
+            ),
+          ),
           Align(
             alignment: Alignment.centerLeft,
             heightFactor: 1,
@@ -375,8 +410,8 @@ class PageData {
 /// Horizontal bar displaying a row of [StoryProgressIndicator] based on the
 /// [pages] provided.
 class PageBar extends StatefulWidget {
-  final List<Future<PageData>> pages;
-  final Animation<double>? animation;
+  final List<PageData> pages;
+  final Animation<double> animation;
   final IndicatorHeight indicatorHeight;
   final Color indicatorColor;
 
@@ -404,7 +439,7 @@ class PageBarState extends State<PageBar> {
     int count = widget.pages.length;
     spacing = (count > 15) ? 1 : ((count > 10) ? 2 : 4);
 
-    widget.animation!.addListener(() {
+    widget.animation.addListener(() {
       setState(() {});
     });
   }
@@ -420,18 +455,6 @@ class PageBarState extends State<PageBar> {
     return pages.firstWhereOrNull((it) => !it.shown) == page;
   }
 
-  Future<double> _calculateStoryValueProgressIndicator(
-      Future<PageData> asyncPageData) async {
-    final ap = <PageData>[];
-    final pageData = await asyncPageData;
-    for (var it in widget.pages) {
-      ap.add(await it);
-    }
-    return isPlaying(ap, pageData)
-        ? widget.animation!.value
-        : (pageData.shown ? 1 : 0);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -440,20 +463,13 @@ class PageBarState extends State<PageBar> {
           child: Container(
             padding:
                 EdgeInsets.only(right: widget.pages.last == it ? 0 : spacing),
-            child: FutureBuilder<double>(
-              future: _calculateStoryValueProgressIndicator(it),
-              builder: (ctx, snapshot) {
-                if (snapshot.hasData && snapshot.data != null) {
-                  return StoryProgressIndicator(
-                    snapshot.data!,
-                    indicatorHeight:
-                        widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
-                    indicatorColor: widget.indicatorColor,
-                  );
-                } else {
-                  return const SizedBox();
-                }
-              },
+            child: StoryProgressIndicator(
+              isPlaying(widget.pages, it)
+                  ? widget.animation.value
+                  : (it.shown ? 1 : 0),
+              indicatorHeight:
+                  widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
+              indicatorColor: widget.indicatorColor,
             ),
           ),
         );

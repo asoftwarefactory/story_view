@@ -8,7 +8,7 @@ import 'story_view.dart';
 class StoryItem {
   /// Specifies how long the page should be displayed. It should be a reasonable
   /// amount of time greater than 0 milliseconds.
-  final Duration duration;
+  Duration duration;
 
   /// Has this page been shown already? This is used to indicate that the page
   /// has been displayed. If some pages are supposed to be skipped in a story,
@@ -386,15 +386,16 @@ class StoryItem {
       Container(
         key: key,
         decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(roundedTop ? 8 : 0),
-              bottom: Radius.circular(roundedBottom ? 8 : 0),
-            ),
-            image: DecorationImage(
-              image: image,
-              fit: BoxFit.cover,
-            )),
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(roundedTop ? 8 : 0),
+            bottom: Radius.circular(roundedBottom ? 8 : 0),
+          ),
+          image: DecorationImage(
+            image: image,
+            fit: BoxFit.cover,
+          ),
+        ),
         child: Container(
           margin: const EdgeInsets.only(
             bottom: 16,

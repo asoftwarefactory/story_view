@@ -123,13 +123,24 @@ class StoryVideoState extends State<StoryVideo> {
               ),
             ),
           )
-        : const Center(
+        // error section , default progress indicator
+        /* example const Center(
             child: Text(
             "Media failed to load.",
             style: TextStyle(
               color: Colors.white,
             ),
-          ));
+          )); */
+        : const Center(
+            child: SizedBox(
+              width: 70,
+              height: 70,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3,
+              ),
+            ),
+          );
   }
 
   @override
