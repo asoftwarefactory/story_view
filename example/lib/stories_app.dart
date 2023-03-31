@@ -42,6 +42,7 @@ class Home extends StatelessWidget {
             SizedBox(
               height: 300,
               child: StoryView(
+                startingIndex: 2,
                 controller: controller,
                 storyItems: [
                   StoryItem.text(

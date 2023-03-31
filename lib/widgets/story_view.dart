@@ -59,6 +59,8 @@ class StoryView extends StatefulWidget {
 
   final int startingIndex;
 
+  final Widget loader;
+
   const StoryView({
     Key? key,
     required this.storyItems,
@@ -72,6 +74,7 @@ class StoryView extends StatefulWidget {
     this.indicatorColor = Colors.white,
     this.activeSwipeDetect = false,
     this.startingIndex = 0,
+    this.loader = const Center(child: CircularProgressIndicator()),
   }) : super(key: key);
 
   @override
@@ -113,6 +116,19 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     // false
 
     _loadStoriesDuration().then((e) {
+      // starts the storyes with index
+      if (widget.startingIndex > 0) {
+        for (var e in widget.storyItems) {
+          final i = widget.storyItems.indexOf(e);
+
+          if (i < widget.startingIndex) {
+            e.shown = true;
+          } else if (i >= widget.startingIndex) {
+            e.shown = false;
+          }
+        }
+      }
+
       final firstPage = widget.storyItems.firstWhereOrNull((it) => !it.shown);
       if (firstPage == null) {
         for (var it2 in widget.storyItems) {
@@ -284,7 +300,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       color: Colors.white,
       child: Stack(
         children: <Widget>[
-          _currentView,
+          if (_animationController != null) _currentView,
+          if (_animationController == null) widget.loader,
           Visibility(
             visible: widget.progressPosition != ProgressPosition.none,
             child: Align(
