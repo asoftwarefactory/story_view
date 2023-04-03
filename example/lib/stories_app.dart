@@ -42,6 +42,7 @@ class Home extends StatelessWidget {
             SizedBox(
               height: 300,
               child: StoryView(
+                activeSwipeDetect: true,
                 startingIndex: 2,
                 controller: controller,
                 storyItems: [
@@ -135,7 +136,7 @@ class Home extends StatelessWidget {
                 onComplete: () {
                   debugPrint("Completed a cycle");
                 },
-                progressPosition: ProgressPosition.bottom,
+                progressPosition: ProgressPosition.top,
                 repeat: false,
                 inline: true,
               ),

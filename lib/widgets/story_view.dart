@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
-
 import 'package:story_view/widgets/story_item.dart';
-
 import '../controller/story_controller.dart';
 import '../utils.dart';
 
