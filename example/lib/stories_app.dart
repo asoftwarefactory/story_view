@@ -42,6 +42,7 @@ class Home extends StatelessWidget {
             SizedBox(
               height: 300,
               child: StoryView(
+                activeSwipeDetect: true,
                 startingIndex: 2,
                 controller: controller,
                 storyItems: [
@@ -52,7 +53,6 @@ class Home extends StatelessWidget {
                     roundedTop: true,
                     duration: const Duration(seconds: 9),
                   ),
-
                   // StoryItem.inlineImage(
                   //   NetworkImage(
                   //       "https://image.ibb.co/gCZFbx/Banku-and-tilapia.jpg"),
@@ -135,7 +135,7 @@ class Home extends StatelessWidget {
                 onComplete: () {
                   debugPrint("Completed a cycle");
                 },
-                progressPosition: ProgressPosition.bottom,
+                progressPosition: ProgressPosition.top,
                 repeat: false,
                 inline: true,
               ),
@@ -144,7 +144,7 @@ class Home extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const MoreStories()));
+                      builder: (context) => const MoreStories1()));
                 },
                 child: Container(
                   decoration: const BoxDecoration(
@@ -210,6 +210,7 @@ class MoreStoriesState extends State<MoreStories> {
         title: const Text("More"),
       ),
       body: StoryView(
+        key: UniqueKey(),
         storyItems: [
           StoryItem.text(
             title: "I guess you'd love to see more of our food. That's great.",
@@ -231,9 +232,10 @@ class MoreStoriesState extends State<MoreStories> {
             controller: storyController,
           ),
           StoryItem.pageImage(
-              url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
-              caption: "Working with gifs",
-              controller: storyController),
+            url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
+            caption: "Working with gifs",
+            controller: storyController,
+          ),
           StoryItem.pageImage(
             url: "https://media.giphy.com/media/XcA8krYsrEAYXKf4UQ/giphy.gif",
             caption: "Hello, from the other side",
@@ -254,6 +256,78 @@ class MoreStoriesState extends State<MoreStories> {
         progressPosition: ProgressPosition.top,
         repeat: false,
         controller: storyController,
+      ),
+    );
+  }
+}
+
+class MoreStories1 extends StatefulWidget {
+  const MoreStories1({super.key});
+
+  @override
+  MoreStories1State createState() => MoreStories1State();
+}
+
+class MoreStories1State extends State<MoreStories1> {
+  final storyController = StoryController();
+  final pageController = PageController(initialPage: 1);
+  @override
+  void dispose() {
+    storyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      /* appBar: AppBar(
+        title: const Text("More"),
+      ), */
+      body: MultipleStoryView(
+        pageController: pageController,
+        buildViews: (PageController controller) {
+          return [
+            StoryView(
+              storyItems: [
+                StoryItem.text(
+                  title:
+                      "I guess you'd love to see more of our food. That's great.",
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 9),
+                ),
+                StoryItem.text(
+                  title: "Nice!\n\nTap to continue.",
+                  backgroundColor: Colors.blue,
+                  textStyle: const TextStyle(
+                    fontFamily: 'Dancing',
+                    fontSize: 40,
+                  ),
+                ),
+              ],
+              controller: StoryController(),
+              onComplete: () => controller.goToNextPage(),
+            ),
+            StoryView(
+              storyItems: [
+                StoryItem.text(
+                  title:
+                      "I guess you'd love to see more of our food. That's great.",
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 9),
+                ),
+                StoryItem.text(
+                  title: "Nice!\n\nTap to continue.",
+                  backgroundColor: Colors.red,
+                  textStyle: const TextStyle(
+                    fontFamily: 'Dancing',
+                    fontSize: 40,
+                  ),
+                ),
+              ],
+              controller: StoryController(),
+            ),
+          ];
+        },
       ),
     );
   }
