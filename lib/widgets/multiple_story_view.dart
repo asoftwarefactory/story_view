@@ -37,8 +37,8 @@ class _MultipleStoryViewState extends State<MultipleStoryView> {
 
   @override
   Widget build(BuildContext context) {
-    // FIRST SOLUTION it's WORK
     return SizedBox.expand(
+      // FIX: Solution to fix PageView scrolling
       child: Listener(
         onPointerMove: (moveEvent) {
           if (moveEvent.delta.dx > 0) {
@@ -55,7 +55,6 @@ class _MultipleStoryViewState extends State<MultipleStoryView> {
           itemCount: views.length,
           itemBuilder: (ctx, index) {
             return views.elementAt(index);
-            // return IgnorePointer(child: views.elementAt(index));
           },
           onPageChanged: (i) {
             widget.onStoryChanged?.call(views.elementAt(i));
