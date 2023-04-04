@@ -53,7 +53,6 @@ class Home extends StatelessWidget {
                     roundedTop: true,
                     duration: const Duration(seconds: 9),
                   ),
-
                   // StoryItem.inlineImage(
                   //   NetworkImage(
                   //       "https://image.ibb.co/gCZFbx/Banku-and-tilapia.jpg"),
