@@ -1,5 +1,3 @@
-import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
-
 enum LoadState { loading, success, failure }
 
 enum Direction { up, down, left, right }
@@ -27,9 +25,10 @@ class VerticalDragInfo {
 }
 
 Future<int> calculateVideoLengthInSeconds(String pathFileOrUrl) async {
-  final mediaInfo = (await FFprobeKit.getMediaInformation(pathFileOrUrl))
+  /* final mediaInfo = (await FFprobeKit.getMediaInformation(pathFileOrUrl))
       .getMediaInformation();
-  final dur = mediaInfo?.getDuration();
+  final dur = mediaInfo?.getDuration(); */
+  const String? dur = null;
   if (dur != null) {
     final returnValue = double.tryParse(dur);
     if (returnValue != null) {

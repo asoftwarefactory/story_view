@@ -60,6 +60,11 @@ class StoryVideo extends StatefulWidget {
   State<StatefulWidget> createState() {
     return StoryVideoState();
   }
+
+  final Completer<Duration> _videoDuration = Completer();
+  Future<Duration> get onVideoDuration {
+    return _videoDuration.future;
+  }
 }
 
 class StoryVideoState extends State<StoryVideo> {
@@ -83,6 +88,9 @@ class StoryVideoState extends State<StoryVideo> {
         playerController!.initialize().then((v) {
           setState(() {});
           widget.storyController!.play();
+          if(!widget._videoDuration.isCompleted){
+            widget._videoDuration.complete(playerController!.value.duration);
+          }
         });
 
         if (widget.storyController != null) {

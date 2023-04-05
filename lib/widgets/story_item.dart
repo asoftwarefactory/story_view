@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../controller/story_controller.dart';
-import '../utils.dart';
 import 'story_image.dart';
 import 'story_video.dart';
 import 'story_view.dart';
@@ -19,8 +18,9 @@ class StoryItem {
   /// is because the next item to be displayed is taken by the last unshown
   /// story item.
   bool shown;
-  bool? _calculateVideoDuration;
-  String? _resourceUrl;
+
+  Future<Duration> Function()? _calculateDuration;
+  // String? _resourceUrl;
 
   /// The page content
   final Widget view;
@@ -28,11 +28,9 @@ class StoryItem {
     this.view, {
     required this.duration,
     this.shown = false,
-    bool? calculateVideoDuration,
-    String? resourceUrl,
+    Future<Duration> Function()? calculateDuration,
   }) {
-    _calculateVideoDuration = calculateVideoDuration;
-    _resourceUrl = resourceUrl;
+    _calculateDuration = calculateDuration;
   }
 
   /// Short hand to create text-only page.
@@ -270,17 +268,18 @@ class StoryItem {
     bool shown = false,
     Map<String, dynamic>? requestHeaders,
   }) {
+    final storyVideo = StoryVideo.url(
+      url,
+      controller: controller,
+      requestHeaders: requestHeaders,
+    );
     return StoryItem(
       Container(
         key: key,
         color: Colors.black,
         child: Stack(
           children: <Widget>[
-            StoryVideo.url(
-              url,
-              controller: controller,
-              requestHeaders: requestHeaders,
-            ),
+            storyVideo,
             SafeArea(
               child: Align(
                 alignment: Alignment.bottomCenter,
@@ -306,8 +305,7 @@ class StoryItem {
       ),
       shown: shown,
       duration: const Duration(seconds: 10),
-      calculateVideoDuration: true,
-      resourceUrl: url,
+      calculateDuration: () async => await storyVideo.onVideoDuration,
     );
   }
 
@@ -420,8 +418,8 @@ class StoryItem {
 
   Future<Duration> calculateStoryDuration() async {
     try {
-      if (_calculateVideoDuration == true && _resourceUrl != null) {
-        final seconds = await calculateVideoLengthInSeconds(_resourceUrl ?? "");
+      if (_calculateDuration != null) {
+        final seconds = (await _calculateDuration!()).inSeconds;
         if (seconds > 0) {
           return Duration(seconds: seconds);
         } else {
