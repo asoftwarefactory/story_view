@@ -152,9 +152,9 @@ class Home extends StatelessWidget {
                       borderRadius:
                           BorderRadius.vertical(bottom: Radius.circular(8))),
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const <Widget>[
+                    children: <Widget>[
                       Icon(
                         Icons.arrow_forward,
                         color: Colors.white,
