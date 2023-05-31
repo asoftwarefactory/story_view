@@ -23,3 +23,20 @@ class VerticalDragInfo {
     direction = tmpDirection;
   }
 }
+
+Future<int> calculateVideoLengthInSeconds(String pathFileOrUrl) async {
+  /* final mediaInfo = (await FFprobeKit.getMediaInformation(pathFileOrUrl))
+      .getMediaInformation();
+  final dur = mediaInfo?.getDuration(); */
+  const String? dur = null;
+  if (dur != null) {
+    final returnValue = double.tryParse(dur);
+    if (returnValue != null) {
+      return returnValue.round();
+    } else {
+      throw Exception(" mediaInfo?.getDuration() return value not valid");
+    }
+  } else {
+    throw Exception("getDuration return null value , check pathFileOrUrl");
+  }
+}
